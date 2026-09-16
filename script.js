@@ -69,9 +69,87 @@ function calcularSegmento(datos) {
   return segmentos;
 }
 
+function calcularIntegral(segmento) {
+  const deltaT = segmento.tFin - segmento.tInicio;
+  const m = segmento.pendiente;
+  return 3600 * (segmento.QInicio * deltaT + (m * deltaT * deltaT) / 2);
+}
+
+function calcularTrapecio(segmento) {
+  const deltaT = segmento.tFin - segmento.tInicio;
+  return 3600 * ((segmento.QInicio + segmento.QFin) / 2) * deltaT;
+}
+
+const TOLERANCIA_VERIFICACION = 0.01;
+
+function verificarResultados(datos, modo) {
+  const todosLosSegmentos = calcularSegmento(datos);
+  const segmentos = modo === 'primer_intervalo'
+    ? todosLosSegmentos.slice(0, 1)
+    : todosLosSegmentos;
+
+  const segmentosEvaluados = segmentos.map((segmento) => {
+    const volumenIntegral = calcularIntegral(segmento);
+    const volumenTrapecio = calcularTrapecio(segmento);
+    const diferencia = Math.abs(volumenIntegral - volumenTrapecio);
+    const estadoVerificacion = diferencia <= TOLERANCIA_VERIFICACION ? 'VERIFICADO' : 'FALLIDO';
+
+    return { ...segmento, volumenIntegral, volumenTrapecio, diferencia, estadoVerificacion };
+  });
+
+  const segmentoFallidoIndice = segmentosEvaluados.findIndex(
+    (segmento) => segmento.estadoVerificacion === 'FALLIDO'
+  );
+  const estadoGlobal = segmentoFallidoIndice === -1 ? 'VERIFICADO' : 'FALLIDO';
+
+  const hayFallo = estadoGlobal === 'FALLIDO';
+  const volumenTotalIntegral = hayFallo
+    ? null
+    : segmentosEvaluados.reduce((total, segmento) => total + segmento.volumenIntegral, 0);
+  const volumenTotalTrapecio = hayFallo
+    ? null
+    : segmentosEvaluados.reduce((total, segmento) => total + segmento.volumenTrapecio, 0);
+  const diferenciaTotal = hayFallo
+    ? null
+    : Math.abs(volumenTotalIntegral - volumenTotalTrapecio);
+
+  return {
+    modo,
+    segmentos: segmentosEvaluados,
+    volumenTotalIntegral,
+    volumenTotalTrapecio,
+    diferenciaTotal,
+    estadoGlobal,
+    segmentoFallidoIndice: hayFallo ? segmentoFallidoIndice : null,
+  };
+}
+
+function calcularPeriodo(datos, modo) {
+  const resultadoValidacion = validarDatos(datos);
+  if (!resultadoValidacion.esValido) {
+    throw new Error(resultadoValidacion.mensaje);
+  }
+
+  return verificarResultados(datos, modo);
+}
+
 /* ==========================================================================
    INTERFAZ (Canvas + DOM — consume el motor matemático, sin lógica propia)
    ========================================================================== */
+
+let ctxLienzo = null;
+
+function obtenerVariableCSS(nombre, valorPorDefecto) {
+  const valor = getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
+  return valor || valorPorDefecto;
+}
+
+function formatearNumero(valor, decimales) {
+  return new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  }).format(valor);
+}
 
 function poblarTablaAccesible(datos) {
   const cuerpoTabla = document.getElementById('cuerpo-tabla-datos');
@@ -130,5 +208,129 @@ function prepararLienzo() {
   return ctx;
 }
 
-poblarTablaAccesible(DATOS_ORIGINALES);
-prepararLienzo();
+function actualizarGrafica(ctx, resultado) {
+  const canvas = ctx.canvas;
+  const ancho = canvas.clientWidth;
+  const alto = canvas.clientHeight;
+
+  ctx.clearRect(0, 0, ancho, alto);
+
+  const puntos = [{ t: resultado.segmentos[0].tInicio, Q: resultado.segmentos[0].QInicio }];
+  for (const segmento of resultado.segmentos) {
+    puntos.push({ t: segmento.tFin, Q: segmento.QFin });
+  }
+
+  const tMin = puntos[0].t;
+  const tMax = puntos[puntos.length - 1].t;
+  const qValores = puntos.map((punto) => punto.Q);
+  const qMin = Math.min(...qValores);
+  const qMax = Math.max(...qValores);
+  const margenQ = (qMax - qMin) * 0.1 || 1;
+  const qEjeMin = qMin - margenQ;
+  const qEjeMax = qMax + margenQ;
+
+  const margen = { superior: 20, derecha: 20, inferior: 40, izquierda: 70 };
+  const anchoGrafico = Math.max(ancho - margen.izquierda - margen.derecha, 1);
+  const altoGrafico = Math.max(alto - margen.superior - margen.inferior, 1);
+
+  const escalarT = (t) => margen.izquierda + ((t - tMin) / (tMax - tMin || 1)) * anchoGrafico;
+  const escalarQ = (Q) => margen.superior + altoGrafico
+    - ((Q - qEjeMin) / (qEjeMax - qEjeMin || 1)) * altoGrafico;
+
+  const colorPrimario = obtenerVariableCSS('--color-primario', '#0b4f8a');
+  const colorPrimarioClaro = obtenerVariableCSS('--color-primario-claro', '#4d8bc9');
+  const colorTexto = obtenerVariableCSS('--color-texto', '#1a1a1a');
+  const colorBorde = obtenerVariableCSS('--color-borde', '#6b7280');
+
+  ctx.strokeStyle = colorBorde;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margen.izquierda, margen.superior);
+  ctx.lineTo(margen.izquierda, margen.superior + altoGrafico);
+  ctx.lineTo(margen.izquierda + anchoGrafico, margen.superior + altoGrafico);
+  ctx.stroke();
+
+  ctx.fillStyle = colorTexto;
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Tiempo (h)', margen.izquierda + anchoGrafico / 2, alto - 8);
+
+  ctx.save();
+  ctx.translate(14, margen.superior + altoGrafico / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Caudal (m³/s)', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = colorPrimarioClaro + '66';
+  for (const segmento of resultado.segmentos) {
+    ctx.beginPath();
+    ctx.moveTo(escalarT(segmento.tInicio), margen.superior + altoGrafico);
+    ctx.lineTo(escalarT(segmento.tInicio), escalarQ(segmento.QInicio));
+    ctx.lineTo(escalarT(segmento.tFin), escalarQ(segmento.QFin));
+    ctx.lineTo(escalarT(segmento.tFin), margen.superior + altoGrafico);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = colorPrimario;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  puntos.forEach((punto, indice) => {
+    const x = escalarT(punto.t);
+    const y = escalarQ(punto.Q);
+    if (indice === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = colorPrimario;
+  for (const punto of puntos) {
+    ctx.beginPath();
+    ctx.arc(escalarT(punto.t), escalarQ(punto.Q), 4, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+function actualizarInterfaz(resultado) {
+  const panelResultados = document.getElementById('panel-resultados');
+
+  const bloquesSegmentos = resultado.segmentos.map((segmento) => {
+    const deltaT = segmento.tFin - segmento.tInicio;
+
+    return `
+      <article class="bloque-segmento">
+        <h3>Segmento [${formatearNumero(segmento.tInicio, 0)} h, ${formatearNumero(segmento.tFin, 0)} h]</h3>
+        <p class="formula-volumen">
+          V = 3600 · [ Q<sub>inicio</sub> · Δt + m · Δt<sup>2</sup> / 2 ]<br>
+          V = 3600 · [ ${formatearNumero(segmento.QInicio, 2)} · ${formatearNumero(deltaT, 0)}
+          + ${formatearNumero(segmento.pendiente, 6)} · ${formatearNumero(deltaT, 0)}<sup>2</sup> / 2 ]
+        </p>
+        <p class="volumen-segmento">Volumen (integral definida): <strong>${formatearNumero(segmento.volumenIntegral, 2)} m³</strong></p>
+      </article>
+    `;
+  }).join('');
+
+  panelResultados.innerHTML = bloquesSegmentos;
+
+  if (ctxLienzo) {
+    actualizarGrafica(ctxLienzo, resultado);
+  }
+}
+
+function inicializarAplicacion() {
+  poblarTablaAccesible(DATOS_ORIGINALES);
+  ctxLienzo = prepararLienzo();
+
+  try {
+    const resultado = calcularPeriodo(DATOS_ORIGINALES, 'primer_intervalo');
+    actualizarInterfaz(resultado);
+  } catch (error) {
+    const panelResultados = document.getElementById('panel-resultados');
+    panelResultados.textContent = error.message;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', inicializarAplicacion);
