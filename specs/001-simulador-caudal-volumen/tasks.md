@@ -29,8 +29,8 @@ Proyecto único de aplicación web estática, exactamente tres archivos en la ra
 
 **Purpose**: Inicialización de los tres archivos de producción exigidos por la Constitución.
 
-- [ ] T001 Crear la estructura base de archivos en la raíz del repositorio: `index.html`, `styles.css`, `script.js`. `index.html` incluye boilerplate HTML5 (`<!DOCTYPE html>`, `lang="es"`, `<meta charset="UTF-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, `<title>`, enlace a `styles.css`, y carga de `script.js` al final de `<body>` **sin** `type="module"`). `script.js` inicia con `'use strict';`. Ningún archivo usa `import`/`export` (FR-006).
-- [ ] T002 Configurar en `styles.css` un reset CSS mínimo y variables de diseño (`:root { --... }`) para la paleta de color (contraste mínimo 4.5:1 en texto y 3:1 en elementos gráficos, FR-009) y la tipografía base. Depende de T001.
+- [X] T001 Crear la estructura base de archivos en la raíz del repositorio: `index.html`, `styles.css`, `script.js`. `index.html` incluye boilerplate HTML5 (`<!DOCTYPE html>`, `lang="es"`, `<meta charset="UTF-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1">`, `<title>`, enlace a `styles.css`, y carga de `script.js` al final de `<body>` **sin** `type="module"`). `script.js` inicia con `'use strict';`. Ningún archivo usa `import`/`export` (FR-006).
+- [X] T002 Configurar en `styles.css` un reset CSS mínimo y variables de diseño (`:root { --... }`) para la paleta de color (contraste mínimo 4.5:1 en texto y 3:1 en elementos gráficos, FR-009) y la tipografía base. Depende de T001.
 
 ---
 

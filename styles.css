@@ -1,0 +1,47 @@
+/* Reset CSS mínimo */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+img,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Variables de diseño (paleta y tipografía) */
+:root {
+  /* Contraste de texto verificado ≥ 4.5:1 sobre --color-fondo */
+  --color-fondo: #ffffff;
+  --color-superficie: #f4f6f8;
+  --color-texto: #1a1a1a;
+  --color-texto-secundario: #3d3d3d;
+  --color-borde: #6b7280;
+
+  /* Contraste de elementos gráficos verificado ≥ 3:1 sobre --color-fondo */
+  --color-primario: #0b4f8a;
+  --color-primario-claro: #4d8bc9;
+  --color-exito: #1e6b34;
+  --color-error: #a4211e;
+
+  --fuente-base: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --tamano-base: 1rem;
+  --interlineado-base: 1.5;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: var(--fuente-base);
+  font-size: var(--tamano-base);
+  line-height: var(--interlineado-base);
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
+}
