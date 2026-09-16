@@ -48,6 +48,7 @@ Precondición común a todas las funciones de esta sección: no acceden a `docum
   - `'primer_intervalo'` → solo el segmento `[0,6]` (índice 0).
   - `'periodo_completo'` → los 5 segmentos `[0,6],[6,12],[12,24],[24,30],[30,36]`.
 - **Tolerancia**: absoluta, `0.01 m³` (R1/DEC-01). Aplicada tanto por segmento (`estadoVerificacion`) como al total (`estadoGlobal`).
+- **Fallo de verificación (FR-004, R12)**: si algún `segmento.estadoVerificacion === 'FALLIDO'`, la función fija `estadoGlobal = 'FALLIDO'`, `segmentoFallidoIndice` al índice del primer segmento fallido, y **NO** calcula `volumenTotalIntegral`/`volumenTotalTrapecio`/`diferenciaTotal` (quedan en `null`) — nunca se suma un total que incluya un segmento no verificado.
 - **Nota de nomenclatura**: esta función es la responsable de la comparación y agregación que en el desglose de tareas de referencia estaban repartidas entre `calcularPeriodo()` + `calcularTotales()`; aquí se consolidan bajo el nombre exigido por la Constitución.
 
 ### `calcularPeriodo(datos: RegistroCaudal[], modo: 'primer_intervalo' | 'periodo_completo'): ResultadoPeriodo`
@@ -62,12 +63,13 @@ Precondición común a todas las funciones de esta sección: no acceden a `docum
 
 - **Input**: contexto 2D ya inicializado (con `devicePixelRatio` aplicado, R10) y el `ResultadoPeriodo` calculado por `calcularPeriodo()`.
 - **Comportamiento**: dibuja únicamente lo que hay en `resultado.segmentos` — ejes con unidades, los puntos y segmentos correspondientes, y el área sombreada. No realiza ningún cálculo de volumen ni de verificación.
-- **Fallback**: si `HTMLCanvasElement` no está soportado (feature detection previa, R8), esta función no se invoca; la interfaz muestra la tabla HTML alternativa en su lugar.
+- **Fallback**: si `HTMLCanvasElement` no está soportado (feature detection previa, R8), esta función no se invoca; la interfaz muestra la tabla HTML alternativa en su lugar (poblada una sola vez en la inicialización, ver nota bajo `actualizarInterfaz()`), mientras el panel de resultados permanece visible como de costumbre.
 
 ### `actualizarInterfaz(resultado: ResultadoPeriodo): void`
 
 - **Input**: el mismo `ResultadoPeriodo`.
-- **Comportamiento**: actualiza el panel de resultados (fórmulas con valores sustituidos, volúmenes formateados con `Intl.NumberFormat('es-CO')`, estado "VERIFICADO"/"VERIFICACIÓN FALLIDA" con estilo diferenciado) y la tabla HTML semántica alternativa. Orquesta también la llamada a `actualizarGrafica()` cuando Canvas está disponible.
+- **Comportamiento**: actualiza el panel de resultados (fórmulas con valores sustituidos, volúmenes formateados con `Intl.NumberFormat('es-CO')`, estado "VERIFICADO"/"VERIFICACIÓN FALLIDA" con estilo diferenciado). Si `resultado.estadoGlobal === 'FALLIDO'`, no renderiza ningún volumen total (parcial o completo): muestra únicamente el mensaje de fallo identificando `resultado.segmentos[resultado.segmentoFallidoIndice]` (FR-004, R12). Orquesta también la llamada a `actualizarGrafica()` cuando Canvas está disponible.
+- **Nota — tabla accesible (FR-001, R13)**: la tabla HTML semántica alternativa se puebla **una sola vez**, en la inicialización de la aplicación, con únicamente los 6 pares `(t, Q)` de `DATOS_ORIGINALES` (dato inmutable, no depende de `resultado`). No incluye volúmenes, fórmulas ni estado de verificación por segmento — esa información vive solo en el panel de resultados que sí actualiza esta función. Por lo tanto `actualizarInterfaz()` **no** vuelve a tocar la tabla en cada cambio de intervalo; es un paso de inicialización aparte, no uno de los ocho módulos exigidos por el Principio VI.
 - **Disparador**: se invoca en la carga inicial (modo por defecto `'primer_intervalo'`, R7) y en cada evento `change` de los controles de selección de intervalo.
 
 ## Errores y mensajes (Principio VII)
@@ -79,3 +81,4 @@ Precondición común a todas las funciones de esta sección: no acceden a `docum
 | Tiempos no ascendentes | "No fue posible validar el segmento: los tiempos de sus extremos no están en orden ascendente." |
 | Duración de intervalo = 0 | "No fue posible validar el segmento: los tiempos de sus extremos son iguales." |
 | `estadoVerificacion === 'FALLIDO'` en algún segmento | "VERIFICACIÓN FALLIDA: la diferencia entre el método de integral definida y el método del trapecio (<diferencia> m³) supera la tolerancia permitida (0.01 m³)." |
+| `estadoGlobal === 'FALLIDO'` en Periodo completo (FR-004, R12) | Mensaje anterior, aplicado al segmento `resultado.segmentos[resultado.segmentoFallidoIndice]` (identificando su intervalo `[tInicio, tFin]`), seguido de: "No se calcula el volumen total del periodo completo mientras este segmento no supere la verificación." Ningún volumen total se muestra en este caso. |

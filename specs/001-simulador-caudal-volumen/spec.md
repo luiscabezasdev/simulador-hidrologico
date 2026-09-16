@@ -24,6 +24,8 @@
 ### Session 2026-09-16
 
 - Se actualizan los datos de origen y los valores de control conforme a la Constitución v2.0.0: río Magdalena, estación El Banco (Magdalena). Las decisiones técnicas de la sesión anterior (tolerancia, Canvas, formato numérico, versión de JavaScript, accesibilidad, diseño responsivo, persistencia de estado y compatibilidad sin Canvas) se mantienen sin cambios, ya que son independientes del conjunto de datos.
+- Q: Si un segmento del periodo completo muestra "VERIFICACIÓN FALLIDA", ¿qué debe hacer el sistema con el volumen total del periodo completo? → A: No mostrar ningún volumen total; detener el cálculo del periodo completo y mostrar solo el mensaje de fallo, identificando el segmento problemático.
+- Q: ¿Qué contenido debe tener la tabla HTML semántica alternativa que acompaña siempre al gráfico (FR-001), además de los datos originales? → A: Solo los datos originales (t, Q) de los 6 registros; el procedimiento matemático y los resultados por segmento se comunican por separado en el panel de resultados, que ya es HTML accesible independiente del Canvas.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -54,6 +56,7 @@ Como estudiante, quiero seleccionar el periodo completo (t=0 a t=36 horas) para 
 
 1. **Given** que el usuario cambia la selección a "Periodo completo [0, 36]", **When** la interfaz se actualiza, **Then** la gráfica muestra los 6 puntos originales conectados por 5 segmentos rectos consecutivos.
 2. **Given** que se calcula el periodo completo, **When** el sistema compara el método de integral definida con el método del trapecio, **Then** la diferencia absoluta entre ambos es ≤ tolerancia, el estado muestra "VERIFICADO" y el volumen total es 781.352.568,00 m³.
+3. **Given** que un segmento del periodo completo presenta una diferencia absoluta mayor a la tolerancia, **When** el sistema evalúa el resultado, **Then** detiene el cálculo del volumen total, no muestra ningún total (ni parcial ni completo) y señala explícitamente el segmento con estado "VERIFICACIÓN FALLIDA".
 
 ---
 
@@ -77,17 +80,18 @@ Como estudiante, quiero ver el desglose paso a paso de las fórmulas, los valore
 - ¿Qué sucede cuando la precisión de punto flotante de JavaScript genera una diferencia mínima (ej. 0.000000001)? El sistema utiliza la tolerancia absoluta definida de 0.01 m³ para marcarlo como verificado, sin ocultar errores de lógica reales.
 - ¿Cómo maneja el sistema si los datos originales resultan alterados o inválidos? Una función de validación detecta la anomalía (ej. tiempos no ascendentes, cantidad de registros ≠ 6) y detiene la ejecución, mostrando un mensaje descriptivo dirigido al estudiante: "Los datos originales han sido modificados o son inválidos".
 - ¿Qué sucede si el archivo se ejecuta directamente con el protocolo `file://`? La aplicación funciona al 100%, ya que no hay llamadas de red, importaciones externas ni dependencias de CDN que fallen por políticas de origen cruzado.
-- ¿Qué sucede si el navegador del usuario no soporta HTML5 Canvas? El sistema detecta la ausencia de soporte, oculta el canvas y muestra una tabla HTML con los datos numéricos y el procedimiento matemático, junto con un mensaje explicativo al usuario.
+- ¿Qué sucede si el navegador del usuario no soporta HTML5 Canvas? El sistema detecta la ausencia de soporte, oculta el canvas y muestra en su lugar la tabla HTML con los datos originales (FR-001), mientras el panel de resultados con el procedimiento matemático permanece visible como de costumbre (ya es HTML accesible, independiente del Canvas), junto con un mensaje explicativo dirigido al estudiante.
 - ¿Qué sucede si el valor documental de la actividad académica (127.723.286,13 m³) difiere del valor calculado internamente? El sistema conserva y muestra el valor calculado con los datos originales sin redondear (127.723.284,00 m³) como referencia interna, sin imponer el valor documental sobre el cálculo exacto.
+- ¿Qué sucede si un segmento del Periodo completo muestra "VERIFICACIÓN FALLIDA"? El sistema detiene el cálculo del volumen total, no muestra ningún total (ni parcial ni completo), identifica el segmento problemático y presenta el mensaje de fallo, evitando combinar segmentos verificados con uno no confiable.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST renderizar exactamente los 6 puntos de datos originales y conectarlos mediante 5 segmentos rectos en un gráfico 2D construido con HTML5 Canvas 2D API, acompañado de una tabla HTML semántica alternativa con los mismos datos, navegable por teclado y compatible con lectores de pantalla.
+- **FR-001**: El sistema MUST renderizar exactamente los 6 puntos de datos originales y conectarlos mediante 5 segmentos rectos en un gráfico 2D construido con HTML5 Canvas 2D API, acompañado de una tabla HTML semántica alternativa con únicamente los datos originales (t, Q) de los 6 registros, navegable por teclado y compatible con lectores de pantalla. El procedimiento matemático y los resultados por segmento NO se duplican en esta tabla; se comunican por separado en el panel de resultados (ya accesible en HTML, independiente del Canvas).
 - **FR-002**: El sistema MUST calcular el volumen de cada segmento usando la integral definida de la función lineal fᵢ(t), multiplicando el resultado por 3600 para convertir horas a segundos.
 - **FR-003**: El sistema MUST calcular independientemente el volumen de cada segmento usando la fórmula del área del trapecio: V = 3600 · ((Qᵢ + Qᵢ₊₁) / 2) · (tᵢ₊₁ - tᵢ).
-- **FR-004**: El sistema MUST comparar el volumen obtenido por integral definida y por trapecio usando una tolerancia absoluta de 0.01 m³ (`|Vintegral - Vtrapecio| ≤ 0.01`). Si la diferencia absoluta excede ese umbral, MUST mostrar "VERIFICACIÓN FALLIDA" y detener la validación de ese segmento.
+- **FR-004**: El sistema MUST comparar el volumen obtenido por integral definida y por trapecio usando una tolerancia absoluta de 0.01 m³ (`|Vintegral - Vtrapecio| ≤ 0.01`). Si la diferencia absoluta de cualquier segmento excede ese umbral, MUST mostrar "VERIFICACIÓN FALLIDA" para ese segmento, identificarlo explícitamente, detener el cálculo del volumen total del Periodo completo (sin sumar ni mostrar ningún total, parcial o completo) y no presentar ese resultado como validado.
 - **FR-005**: El sistema MUST permitir al usuario alternar entre "Primer intervalo [0,6]" y "Periodo completo [0,36]", actualizando reactivamente el gráfico, el sombreado, los cálculos y el panel de resultados.
 - **FR-006**: El sistema MUST ejecutarse exclusivamente con HTML5, CSS3 y JavaScript vanilla (ECMAScript 2020 o superior, sin módulos ES `import`/`export`), sin frameworks, librerías externas, backend ni APIs de red, garantizando compatibilidad total con el protocolo `file://`.
 - **FR-007**: El sistema MUST validar las precondiciones de los datos (exactamente 6 registros, tipos numéricos válidos, orden ascendente estricto de tiempo, duración de cada intervalo > 0) antes de ejecutar cualquier cálculo.

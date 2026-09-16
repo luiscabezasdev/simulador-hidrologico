@@ -69,12 +69,15 @@ Agregado producido por `calcularPeriodo(datos, modo)` para un modo de visualizac
 |---|---|---|
 | `modo` | `'primer_intervalo' \| 'periodo_completo'` | Modo de visualización seleccionado por el usuario. |
 | `segmentos` | `SegmentoModelo[]` | 1 elemento si `modo = 'primer_intervalo'` (solo el segmento [0,6]); 5 elementos si `modo = 'periodo_completo'`. |
-| `volumenTotalIntegral` | number | Suma de `volumenIntegral` de todos los `segmentos` incluidos. |
-| `volumenTotalTrapecio` | number | Suma de `volumenTrapecio` de todos los `segmentos` incluidos. |
-| `diferenciaTotal` | number | `Math.abs(volumenTotalIntegral - volumenTotalTrapecio)`. |
-| `estadoGlobal` | `'VERIFICADO' \| 'FALLIDO'` | `'VERIFICADO'` solo si **todos** los `segmentos.estadoVerificacion` son `'VERIFICADO'`. |
+| `volumenTotalIntegral` | number \| null | Suma de `volumenIntegral` de todos los `segmentos` incluidos. `null` si `estadoGlobal === 'FALLIDO'` (FR-004: no se calcula ni se muestra ningún total cuando un segmento no verifica). |
+| `volumenTotalTrapecio` | number \| null | Suma de `volumenTrapecio` de todos los `segmentos` incluidos. Mismo criterio de `null` que `volumenTotalIntegral`. |
+| `diferenciaTotal` | number \| null | `Math.abs(volumenTotalIntegral - volumenTotalTrapecio)`. Mismo criterio de `null`. |
+| `estadoGlobal` | `'VERIFICADO' \| 'FALLIDO'` | `'VERIFICADO'` solo si **todos** los `segmentos.estadoVerificacion` son `'VERIFICADO'`; `'FALLIDO'` si al menos uno es `'FALLIDO'`. |
+| `segmentoFallidoIndice` | number \| null | Índice (0-based, dentro de `segmentos`) del primer `SegmentoModelo` con `estadoVerificacion === 'FALLIDO'`. `null` si `estadoGlobal === 'VERIFICADO'`. Permite a la interfaz identificar explícitamente el segmento problemático sin recorrer el array de nuevo (FR-004). |
 
 **Relaciones**: `ResultadoPeriodo.segmentos` es un subconjunto ordenado y contiguo de los 5 `SegmentoModelo` derivados de los 6 `RegistroCaudal`; no se crean, reordenan ni interpolan segmentos adicionales.
+
+**Regla de fallo de verificación** (FR-004, decisión de `/speckit-clarify` sesión 2026-09-16): si `estadoGlobal === 'FALLIDO'`, `verificarResultados()` NO suma los volúmenes de los segmentos incluidos — `volumenTotalIntegral`, `volumenTotalTrapecio` y `diferenciaTotal` quedan en `null` en lugar de un total parcial o mixto. La interfaz nunca combina un total numérico con un estado `'FALLIDO'`.
 
 ## Diagrama de flujo de datos
 

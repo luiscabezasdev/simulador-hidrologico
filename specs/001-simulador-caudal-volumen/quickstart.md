@@ -36,7 +36,7 @@ Guía para comprobar de extremo a extremo que la implementación cumple `spec.md
 
 1. Con cualquiera de los dos modos seleccionados, revisar el panel "Procedimiento Matemático".
 2. Confirmar que se muestran, para cada segmento visible: la función `fᵢ(t)`, la integral evaluada, el cálculo del trapecio y la diferencia entre ambos.
-3. (Prueba de robustez, opcional) Simular una discrepancia editando temporalmente `script.js` para redondear la pendiente antes de calcular (p. ej. `Math.round(pendiente * 10000) / 10000`), recargar, y confirmar que el estado cambia a **"VERIFICACIÓN FALLIDA"** con la diferencia explicada. Revertir el cambio después de la prueba.
+3. (Prueba de robustez, opcional) Simular una discrepancia editando temporalmente `script.js` para redondear la pendiente antes de calcular (p. ej. `Math.round(pendiente * 10000) / 10000`), recargar, y confirmar que el segmento afectado cambia a **"VERIFICACIÓN FALLIDA"** con la diferencia explicada. En modo "Periodo completo", confirmar además que **no se muestra ningún volumen total** (ni parcial ni completo) y que el mensaje identifica explícitamente el segmento problemático (FR-004, R12). Revertir el cambio después de la prueba.
 
 ## 5. Validar el motor matemático de forma aislada (consola del navegador)
 
