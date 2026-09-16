@@ -8,6 +8,43 @@
 </head>
 <body>
 
+  <header>
+    <h1>Simulador de Caudal y Volumen — Río Magdalena</h1>
+  </header>
+
+  <main>
+
+    <section id="seccion-grafico" aria-labelledby="titulo-grafico">
+      <h2 id="titulo-grafico">Gráfica de caudal</h2>
+      <div class="contenedor-grafico">
+        <canvas id="grafico">
+          Su navegador no admite gráficos mediante Canvas. Consulte la tabla de datos que se muestra a continuación.
+        </canvas>
+      </div>
+      <table id="tabla-datos">
+        <caption>Datos originales de caudal — Estación El Banco, Magdalena</caption>
+        <thead>
+          <tr>
+            <th scope="col">Tiempo (h)</th>
+            <th scope="col">Caudal (m³/s)</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-datos"></tbody>
+      </table>
+    </section>
+
+    <section id="seccion-controles" aria-labelledby="titulo-controles">
+      <h2 id="titulo-controles">Selección de intervalo</h2>
+      <div id="controles-intervalo"></div>
+    </section>
+
+    <section id="seccion-resultados" aria-labelledby="titulo-resultados">
+      <h2 id="titulo-resultados">Resultados</h2>
+      <div id="panel-resultados"></div>
+    </section>
+
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
