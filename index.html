@@ -35,12 +35,29 @@
 
     <section id="seccion-controles" aria-labelledby="titulo-controles">
       <h2 id="titulo-controles">Selección de intervalo</h2>
-      <div id="controles-intervalo"></div>
+      <div id="controles-intervalo" role="radiogroup" aria-labelledby="titulo-controles">
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-primer-intervalo" value="primer_intervalo"
+            aria-label="Mostrar primer intervalo, de 0 a 6 horas" checked>
+          Primer intervalo [0,6]
+        </label>
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-periodo-completo" value="periodo_completo"
+            aria-label="Mostrar periodo completo, de 0 a 36 horas">
+          Periodo completo [0,36]
+        </label>
+      </div>
     </section>
 
     <section id="seccion-resultados" aria-labelledby="titulo-resultados">
       <h2 id="titulo-resultados">Resultados</h2>
-      <div id="panel-resultados"></div>
+      <div id="panel-resultados">
+        <div id="resumen-resultado"></div>
+        <div id="seccion-procedimiento">
+          <h3 id="titulo-procedimiento">Procedimiento Matemático</h3>
+          <div id="bloques-procedimiento"></div>
+        </div>
+      </div>
     </section>
 
   </main>

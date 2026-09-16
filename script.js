@@ -294,43 +294,111 @@ function actualizarGrafica(ctx, resultado) {
   }
 }
 
-function actualizarInterfaz(resultado) {
-  const panelResultados = document.getElementById('panel-resultados');
+function mensajeVerificacionFallida(diferencia) {
+  return 'VERIFICACIÓN FALLIDA: la diferencia entre el método de integral definida y el método del '
+    + `trapecio (${formatearNumero(diferencia, 2)} m³) supera la tolerancia permitida (0.01 m³).`;
+}
 
-  const bloquesSegmentos = resultado.segmentos.map((segmento) => {
-    const deltaT = segmento.tFin - segmento.tInicio;
+function generarBloqueSegmento(segmento) {
+  const deltaT = segmento.tFin - segmento.tInicio;
+  const esVerificado = segmento.estadoVerificacion === 'VERIFICADO';
+  const claseEstado = esVerificado ? 'estado-verificado' : 'estado-fallido';
+  const simboloEstado = esVerificado ? '✓' : '✕';
+  const textoEstado = esVerificado ? 'VERIFICADO' : mensajeVerificacionFallida(segmento.diferencia);
 
+  return `
+    <article class="bloque-segmento">
+      <h4>Segmento [${formatearNumero(segmento.tInicio, 0)} h, ${formatearNumero(segmento.tFin, 0)} h]</h4>
+      <p class="formula-funcion">
+        f(t) = Q<sub>inicio</sub> + m · (t − t<sub>inicio</sub>)<br>
+        f(t) = ${formatearNumero(segmento.QInicio, 2)} + ${formatearNumero(segmento.pendiente, 6)}
+        · (t − ${formatearNumero(segmento.tInicio, 0)})
+      </p>
+      <p class="formula-volumen">
+        <strong>Integral definida</strong><br>
+        V = 3600 · [ Q<sub>inicio</sub> · Δt + m · Δt<sup>2</sup> / 2 ]<br>
+        V = 3600 · [ ${formatearNumero(segmento.QInicio, 2)} · ${formatearNumero(deltaT, 0)}
+        + ${formatearNumero(segmento.pendiente, 6)} · ${formatearNumero(deltaT, 0)}<sup>2</sup> / 2 ]<br>
+        V = <strong>${formatearNumero(segmento.volumenIntegral, 2)} m³</strong>
+      </p>
+      <p class="formula-trapecio">
+        <strong>Método del trapecio</strong><br>
+        V = 3600 · ( (Q<sub>inicio</sub> + Q<sub>fin</sub>) / 2 ) · Δt<br>
+        V = 3600 · ( (${formatearNumero(segmento.QInicio, 2)} + ${formatearNumero(segmento.QFin, 2)}) / 2 )
+        · ${formatearNumero(deltaT, 0)}<br>
+        V = <strong>${formatearNumero(segmento.volumenTrapecio, 2)} m³</strong>
+      </p>
+      <p class="verificacion-segmento">
+        Diferencia absoluta: ${formatearNumero(segmento.diferencia, 2)} m³<br>
+        <span class="estado-badge ${claseEstado}">${simboloEstado} ${textoEstado}</span>
+      </p>
+    </article>
+  `;
+}
+
+function generarResumen(resultado) {
+  if (resultado.modo !== 'periodo_completo') {
+    return '';
+  }
+
+  if (resultado.estadoGlobal === 'VERIFICADO') {
     return `
-      <article class="bloque-segmento">
-        <h3>Segmento [${formatearNumero(segmento.tInicio, 0)} h, ${formatearNumero(segmento.tFin, 0)} h]</h3>
-        <p class="formula-volumen">
-          V = 3600 · [ Q<sub>inicio</sub> · Δt + m · Δt<sup>2</sup> / 2 ]<br>
-          V = 3600 · [ ${formatearNumero(segmento.QInicio, 2)} · ${formatearNumero(deltaT, 0)}
-          + ${formatearNumero(segmento.pendiente, 6)} · ${formatearNumero(deltaT, 0)}<sup>2</sup> / 2 ]
-        </p>
-        <p class="volumen-segmento">Volumen (integral definida): <strong>${formatearNumero(segmento.volumenIntegral, 2)} m³</strong></p>
-      </article>
+      <div class="resumen-total">
+        <p>Volumen total (integral definida): <strong>${formatearNumero(resultado.volumenTotalIntegral, 2)} m³</strong></p>
+        <p>Volumen total (trapecio): <strong>${formatearNumero(resultado.volumenTotalTrapecio, 2)} m³</strong></p>
+        <p>Diferencia total: ${formatearNumero(resultado.diferenciaTotal, 2)} m³</p>
+        <p><span class="estado-badge estado-verificado">✓ VERIFICADO</span></p>
+      </div>
     `;
-  }).join('');
+  }
 
-  panelResultados.innerHTML = bloquesSegmentos;
+  const segmentoFallido = resultado.segmentos[resultado.segmentoFallidoIndice];
+
+  return `
+    <div class="resumen-total">
+      <p><span class="estado-badge estado-fallido">✕ VERIFICACIÓN FALLIDA</span></p>
+      <p>Segmento afectado: [${formatearNumero(segmentoFallido.tInicio, 0)} h, ${formatearNumero(segmentoFallido.tFin, 0)} h]</p>
+      <p>${mensajeVerificacionFallida(segmentoFallido.diferencia)}</p>
+      <p>No se calcula el volumen total del periodo completo mientras este segmento no supere la verificación.</p>
+    </div>
+  `;
+}
+
+function actualizarInterfaz(resultado) {
+  document.getElementById('resumen-resultado').innerHTML = generarResumen(resultado);
+  document.getElementById('bloques-procedimiento').innerHTML = resultado.segmentos
+    .map(generarBloqueSegmento)
+    .join('');
 
   if (ctxLienzo) {
     actualizarGrafica(ctxLienzo, resultado);
   }
 }
 
+function renderizarResultado(modo) {
+  try {
+    const resultado = calcularPeriodo(DATOS_ORIGINALES, modo);
+    actualizarInterfaz(resultado);
+  } catch (error) {
+    document.getElementById('resumen-resultado').innerHTML = `<p class="mensaje-error">${error.message}</p>`;
+    document.getElementById('bloques-procedimiento').innerHTML = '';
+  }
+}
+
+function manejarCambioModo(evento) {
+  renderizarResultado(evento.target.value);
+}
+
+function configurarControlesIntervalo() {
+  const radios = document.querySelectorAll('input[name="modo-intervalo"]');
+  radios.forEach((radio) => radio.addEventListener('change', manejarCambioModo));
+}
+
 function inicializarAplicacion() {
   poblarTablaAccesible(DATOS_ORIGINALES);
   ctxLienzo = prepararLienzo();
-
-  try {
-    const resultado = calcularPeriodo(DATOS_ORIGINALES, 'primer_intervalo');
-    actualizarInterfaz(resultado);
-  } catch (error) {
-    const panelResultados = document.getElementById('panel-resultados');
-    panelResultados.textContent = error.message;
-  }
+  configurarControlesIntervalo();
+  renderizarResultado('primer_intervalo');
 }
 
 document.addEventListener('DOMContentLoaded', inicializarAplicacion);
