@@ -1,3 +1,102 @@
+# Código fuente de simulador
+
+## index.html
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Caudal y Volumen - Río Magdalena</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <h1>Simulador de Caudal y Volumen — Río Magdalena</h1>
+    <button id="alternador-tema" type="button" aria-pressed="false">
+      <span class="alternador-tema-icono" aria-hidden="true">🌙</span>
+      <span class="alternador-tema-texto">Cambiar a tema oscuro</span>
+    </button>
+  </header>
+
+  <main>
+
+    <section id="seccion-grafico" aria-labelledby="titulo-grafico">
+      <h2 id="titulo-grafico">Gráfica de caudal</h2>
+      <div class="contenedor-grafico">
+        <canvas id="grafico">
+          Su navegador no admite gráficos mediante Canvas. Consulte la tabla de datos que se muestra a continuación.
+        </canvas>
+      </div>
+      <div id="lectura-rastreo" aria-live="polite" hidden></div>
+      <table id="tabla-datos">
+        <caption>Datos originales de caudal — Estación El Banco, Magdalena</caption>
+        <thead>
+          <tr>
+            <th scope="col">Tiempo (h)</th>
+            <th scope="col">Caudal (m³/s)</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-datos"></tbody>
+      </table>
+    </section>
+
+    <section id="seccion-controles" aria-labelledby="titulo-controles">
+      <h2 id="titulo-controles">Selección de intervalo</h2>
+      <div id="controles-intervalo" role="radiogroup" aria-labelledby="titulo-controles">
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-primer-intervalo" value="primer_intervalo"
+            aria-label="Mostrar primer intervalo, de 0 a 6 horas" checked>
+          Primer intervalo [0,6]
+        </label>
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-periodo-completo" value="periodo_completo"
+            aria-label="Mostrar periodo completo, de 0 a 36 horas">
+          Periodo completo [0,36]
+        </label>
+      </div>
+    </section>
+
+    <section id="seccion-segmentos" aria-labelledby="titulo-segmentos" hidden>
+      <h2 id="titulo-segmentos">Aislar segmento</h2>
+      <div id="leyenda-segmentos" role="group" aria-labelledby="titulo-segmentos">
+        <button type="button" class="boton-segmento" data-segmento-indice="0" aria-pressed="false"
+          aria-label="Aislar segmento de 0 a 6 horas">[0, 6] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="1" aria-pressed="false"
+          aria-label="Aislar segmento de 6 a 12 horas">[6, 12] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="2" aria-pressed="false"
+          aria-label="Aislar segmento de 12 a 24 horas">[12, 24] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="3" aria-pressed="false"
+          aria-label="Aislar segmento de 24 a 30 horas">[24, 30] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="4" aria-pressed="false"
+          aria-label="Aislar segmento de 30 a 36 horas">[30, 36] h</button>
+        <button type="button" id="boton-mostrar-todo">Mostrar periodo completo</button>
+      </div>
+    </section>
+
+    <section id="seccion-resultados" aria-labelledby="titulo-resultados">
+      <h2 id="titulo-resultados">Resultados</h2>
+      <div id="panel-resultados">
+        <div id="resumen-resultado"></div>
+        <div id="seccion-procedimiento">
+          <h3 id="titulo-procedimiento">Procedimiento Matemático</h3>
+          <div id="bloques-procedimiento"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
+```
+
+## script.js
+
+```javascript
 'use strict';
 
 /* ==========================================================================
@@ -785,3 +884,330 @@ function inicializarAplicacion() {
 }
 
 document.addEventListener('DOMContentLoaded', inicializarAplicacion);
+```
+
+## styles.css
+
+```css
+/* Reset CSS mínimo */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+img,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Variables de diseño (paleta y tipografía) */
+:root {
+  /* Contraste de texto verificado ≥ 4.5:1 sobre --color-fondo */
+  --color-fondo: #ffffff;
+  --color-superficie: #f4f6f8;
+  --color-texto: #1a1a1a;
+  --color-texto-secundario: #3d3d3d;
+  --color-borde: #6b7280;
+
+  /* Contraste de elementos gráficos verificado ≥ 3:1 sobre --color-fondo */
+  --color-primario: #0b4f8a;
+  --color-primario-claro: #4d8bc9;
+  --color-exito: #1e6b34;
+  --color-error: #a4211e;
+
+  --fuente-base: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --tamano-base: 1rem;
+  --interlineado-base: 1.5;
+}
+
+/* Tema oscuro (User Story 3) — mismas variables, mismo criterio de contraste ya
+   verificado para el tema claro (≥4.5:1 texto, ≥3:1 elementos gráficos), R17 */
+:root[data-tema="oscuro"] {
+  --color-fondo: #121212;
+  --color-superficie: #1e1e1e;
+  --color-texto: #e8eaed;
+  --color-texto-secundario: #b0b6bd;
+  --color-borde: #8a9099;
+
+  --color-primario: #8ab4f8;
+  --color-primario-claro: #669df6;
+  --color-exito: #81c995;
+  --color-error: #f28b82;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: var(--fuente-base);
+  font-size: var(--tamano-base);
+  line-height: var(--interlineado-base);
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
+}
+
+/* Layout mobile-first — breakpoint único en 768px (FR-010, R6) */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+/* Alternador de tema (User Story 3) */
+#alternador-tema {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+#alternador-tema:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+#alternador-tema[aria-pressed="true"] {
+  border-color: var(--color-primario);
+  background-color: var(--color-superficie);
+  font-weight: bold;
+}
+
+/* Lectura continua de rastreo (User Story 1) */
+#lectura-rastreo {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+  color: var(--color-texto);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Leyenda de aislamiento de segmento (User Story 2) */
+#leyenda-segmentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.boton-segmento,
+#boton-mostrar-todo {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.boton-segmento:focus-visible,
+#boton-mostrar-todo:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+.boton-segmento[aria-pressed="true"] {
+  border-color: var(--color-primario);
+  background-color: var(--color-primario);
+  color: var(--color-fondo);
+  font-weight: bold;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.contenedor-grafico {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+}
+
+#grafico {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#tabla-datos {
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse;
+}
+
+#tabla-datos th,
+#tabla-datos td {
+  border: 1px solid var(--color-borde);
+  padding: 0.5rem;
+  text-align: right;
+}
+
+/* Controles de selección de intervalo (T023) */
+#controles-intervalo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.opcion-intervalo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.opcion-intervalo:has(input:checked) {
+  border-color: var(--color-primario);
+  background-color: var(--color-superficie);
+}
+
+.opcion-intervalo input:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+/* Panel de resultados — primer intervalo (T017) */
+#panel-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.resumen-total {
+  padding: 1rem;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+}
+
+.mensaje-error {
+  padding: 1rem;
+  border: 1px solid var(--color-error);
+  border-radius: 0.25rem;
+  color: var(--color-error);
+}
+
+/* Estado de verificación — color + indicador textual/de forma (WCAG 2.1 AA) */
+.estado-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.25rem;
+  font-weight: bold;
+}
+
+.estado-badge.estado-verificado {
+  color: var(--color-exito);
+  border: 1px solid var(--color-exito);
+}
+
+.estado-badge.estado-fallido {
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+/* Procedimiento Matemático (T027) */
+#seccion-procedimiento h3 {
+  margin-bottom: 0.75rem;
+  color: var(--color-texto);
+}
+
+#bloques-procedimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bloque-segmento {
+  padding: 1rem;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+}
+
+.bloque-segmento h4 {
+  margin-bottom: 0.5rem;
+  color: var(--color-texto);
+}
+
+.bloque-segmento p {
+  margin-bottom: 0.5rem;
+}
+
+.formula-funcion,
+.formula-volumen,
+.formula-trapecio {
+  font-family: "Cambria Math", Cambria, Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-texto-secundario);
+  word-break: break-word;
+}
+
+.formula-volumen strong,
+.formula-trapecio strong,
+.verificacion-segmento strong {
+  color: var(--color-primario);
+}
+
+.verificacion-segmento {
+  font-size: 1rem;
+  color: var(--color-texto);
+}
+
+/* Desde 768px: dos columnas — gráfico + panel de controles/resultados */
+@media (min-width: 768px) {
+  main {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    grid-template-areas:
+      "grafico controles"
+      "grafico segmentos"
+      "grafico resultados";
+    align-items: start;
+  }
+
+  #seccion-grafico {
+    grid-area: grafico;
+  }
+
+  #seccion-controles {
+    grid-area: controles;
+  }
+
+  #seccion-segmentos {
+    grid-area: segmentos;
+  }
+
+  #seccion-resultados {
+    grid-area: resultados;
+  }
+}
+```
+

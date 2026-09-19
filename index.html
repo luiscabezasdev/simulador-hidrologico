@@ -4,12 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Simulador de Caudal y Volumen - Río Magdalena</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="icon" type="image/png" href="logo.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <header>
     <h1>Simulador de Caudal y Volumen — Río Magdalena</h1>
+    <button id="alternador-tema" type="button" aria-pressed="false">
+      <span class="alternador-tema-icono" aria-hidden="true">🌙</span>
+      <span class="alternador-tema-texto">Cambiar a tema oscuro</span>
+    </button>
   </header>
 
   <main>
@@ -21,6 +27,7 @@
           Su navegador no admite gráficos mediante Canvas. Consulte la tabla de datos que se muestra a continuación.
         </canvas>
       </div>
+      <div id="lectura-rastreo" aria-live="polite" hidden></div>
       <table id="tabla-datos">
         <caption>Datos originales de caudal — Estación El Banco, Magdalena</caption>
         <thead>
@@ -35,12 +42,46 @@
 
     <section id="seccion-controles" aria-labelledby="titulo-controles">
       <h2 id="titulo-controles">Selección de intervalo</h2>
-      <div id="controles-intervalo"></div>
+      <div id="controles-intervalo" role="radiogroup" aria-labelledby="titulo-controles">
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-primer-intervalo" value="primer_intervalo"
+            aria-label="Mostrar primer intervalo, de 0 a 6 horas" checked>
+          Primer intervalo [0,6]
+        </label>
+        <label class="opcion-intervalo">
+          <input type="radio" name="modo-intervalo" id="radio-periodo-completo" value="periodo_completo"
+            aria-label="Mostrar periodo completo, de 0 a 36 horas">
+          Periodo completo [0,36]
+        </label>
+      </div>
+    </section>
+
+    <section id="seccion-segmentos" aria-labelledby="titulo-segmentos" hidden>
+      <h2 id="titulo-segmentos">Aislar segmento</h2>
+      <div id="leyenda-segmentos" role="group" aria-labelledby="titulo-segmentos">
+        <button type="button" class="boton-segmento" data-segmento-indice="0" aria-pressed="false"
+          aria-label="Aislar segmento de 0 a 6 horas">[0, 6] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="1" aria-pressed="false"
+          aria-label="Aislar segmento de 6 a 12 horas">[6, 12] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="2" aria-pressed="false"
+          aria-label="Aislar segmento de 12 a 24 horas">[12, 24] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="3" aria-pressed="false"
+          aria-label="Aislar segmento de 24 a 30 horas">[24, 30] h</button>
+        <button type="button" class="boton-segmento" data-segmento-indice="4" aria-pressed="false"
+          aria-label="Aislar segmento de 30 a 36 horas">[30, 36] h</button>
+        <button type="button" id="boton-mostrar-todo">Mostrar periodo completo</button>
+      </div>
     </section>
 
     <section id="seccion-resultados" aria-labelledby="titulo-resultados">
       <h2 id="titulo-resultados">Resultados</h2>
-      <div id="panel-resultados"></div>
+      <div id="panel-resultados">
+        <div id="resumen-resultado"></div>
+        <div id="seccion-procedimiento">
+          <h3 id="titulo-procedimiento">Procedimiento Matemático</h3>
+          <div id="bloques-procedimiento"></div>
+        </div>
+      </div>
     </section>
 
   </main>
